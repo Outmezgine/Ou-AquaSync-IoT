@@ -26,6 +26,7 @@ maintenance_mode = False
 maintenance_end_time = 0
 valve_is_open = False
 valve_open_time = 0
+is_leak_detected = False
 
 
 def on_connect(client, userdata, flags, rc):
@@ -34,7 +35,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe(TOPIC_MAINTENANCE)
 
 def on_message(client, userdata, msg):
-    global maintenance_mode, maintenance_end_time, valve_is_open, valve_open_time
+    global maintenance_mode, maintenance_end_time, valve_is_open, valve_open_time, is_leak_detected
     topic = msg.topic
     payload = msg.payload.decode()
 
@@ -60,7 +61,7 @@ def on_message(client, userdata, msg):
         if maintenance_mode:
             return 
 
-        if moisture < 30 and not valve_is_open:
+        if moisture < 30 and not valve_is_open and not is_leak_detected:
             print(f"Soil is dry ({moisture}%). Opening water valve.")
             client.publish(TOPIC_VALVE, "ON")
             valve_is_open = True
@@ -77,6 +78,7 @@ def on_message(client, userdata, msg):
             print("\n!!! CRITICAL ALARM: PIPE LEAK DETECTED !!!")
             client.publish(TOPIC_VALVE, "OFF")
             valve_is_open = False
+            is_leak_detected = True
             log_event("ALARM_CRITICAL", "Leak detected! Valve closed automatically to prevent flood.")
             client.publish(TOPIC_ALARM, "CRITICAL ALARM: Pipe Leak Detected!")
 
